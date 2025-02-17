@@ -8,6 +8,31 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
+<style>
+    #loading {
+        display: inline-block;
+        width: 50px;
+        height: 50px;
+        border: 3px solid rgba(255, 255, 255, .3);
+        border-radius: 50%;
+        border-top-color: #000;
+        animation: spin 1s ease-in-out infinite;
+        -webkit-animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+        to {
+            -webkit-transform: rotate(360deg);
+        }
+    }
+
+    @-webkit-keyframes spin {
+        to {
+            -webkit-transform: rotate(360deg);
+        }
+    }
+</style>
+
 <body class="bg-gray-100 text-gray-800 transition-all duration-300" id="body">
     <div class="container mx-auto p-6">
         <div class="flex justify-between items-center mb-4">
@@ -43,6 +68,10 @@
         <div id="progress" class="hidden w-full bg-gray-200 h-2 rounded overflow-hidden">
             <div id="progressBar" class="bg-red-500 h-full" style="width: 0%;"></div>
         </div>
+        <span id="loader" class="w-full text-3xl flex justify-center items-center p-4">
+            <div id="loading" class="mx-2"></div>
+            Loading....
+        </span>
 
         <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6"></div>
     </div>
@@ -75,6 +104,7 @@
 
             const count = Object.entries(assets).length;
             if (count) {
+                document.getElementById("loader").classList.toggle("hidden");
                 document.getElementById("asset-counts").classList.toggle("hidden");
                 document.getElementById('asset-counts').innerHTML = `${count > 1 ? `${count} assets found` : `${count} asset found`}`;
             }
