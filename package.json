@@ -1,0 +1,47 @@
+{
+  "name": "asset-scout",
+  "type": "module",
+  "bin": {
+    "asset-scout": "./bin/cli.js"
+  },
+  "version": "1.0.0",
+  "main": "./src/index.js",
+  "scripts": {
+    "start": "node ./src/index.js",
+    "release": "npm version patch && npm publish"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "server.js",
+    "public/"
+  ],
+  "keywords": [
+    "assets",
+    "scan",
+    "filesize",
+    "utility"
+  ],
+  "author": "AroicX",
+  "license": "MIT",
+  "description": "A CLI tool to scan and serve assets from a specified directory.",
+  "dependencies": {
+    "chalk": "^5.4.1",
+    "commander": "^13.1.0",
+    "express": "^4.21.2",
+    "fast-glob": "^3.3.3",
+    "get-port": "^7.1.0",
+    "tailwindcss": "^4.0.6"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.7.1",
+    "@commitlint/config-conventional": "^19.7.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AroicX/asset-scout.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

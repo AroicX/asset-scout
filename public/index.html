@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asset Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 text-gray-800 transition-all duration-300" id="body">
+    <div class="container mx-auto p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="text-3xl font-bold">📸 Asset Tracker <span id="asset-counts"
+                    class="text-sm bg-green-500 text-white p-1 rounded-md hidden"></span></h1>
+            <!-- <button id="darkModeToggle" class="p-2 border rounded-lg bg-gray-200">🌙/☀️</button> -->
+        </div>
+
+        <div class="flex space-x-2 mb-4">
+            <input type="text" id="search" placeholder="Search assets..." class="flex-1 p-2 border rounded-lg shadow-sm"
+                oninput="filterImages()">
+            <select id="filterType" class="p-2 border rounded-lg" onchange="filterImages()">
+                <option value="">All Types</option>
+                <option value="png">PNG</option>
+                <option value="jpg">JPG</option>
+                <option value="jpeg">JPEG</option>
+                <option value="svg">SVG</option>
+                <option value="gif">GIF</option>
+                <option value="webp">WEBP</option>
+            </select>
+
+            <select id="filterUsage" class="p-2 border rounded-lg" onchange="filterImages()"
+                aria-label="Filter by status">
+                <option value="">All</option>
+                <option value="used">Used</option>
+                <option value="not-used">Not Used</option>
+            </select>
+            <button id="deleteSelected" class="hidden p-2 bg-red-500 text-white rounded-lg"
+                onclick="deleteSelectedAssets()">Delete
+                Selected</button>
+        </div>
+
+        <div id="progress" class="hidden w-full bg-gray-200 h-2 rounded overflow-hidden">
+            <div id="progressBar" class="bg-red-500 h-full" style="width: 0%;"></div>
+        </div>
+
+        <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6"></div>
+    </div>
+
+    <script>
+
+        function formatFileSize(bytes) {
+            const units = ["B", "KB", "MB", "GB", "TB"];
+            let i = 0;
+            while (bytes >= 1024 && i < units.length - 1) {
+                bytes /= 1024;
+                i++;
+            }
+            return `${bytes.toFixed(2)} ${units[i]}`;
+        }
+
+        async function fetchAssets() {
+            try {
+                const response = await fetch("/api/assets");
+                const assets = await response.json();
+                renderAssets(assets);
+            } catch (error) {
+                console.error("Error fetching assets:", error);
+            }
+        }
+
+        function renderAssets(assets) {
+            const grid = document.getElementById("grid");
+            grid.innerHTML = "";
+
+            const count = Object.entries(assets).length;
+            if (count) {
+                document.getElementById("asset-counts").classList.toggle("hidden");
+                document.getElementById('asset-counts').innerHTML = `${count > 1 ? `${count} assets found` : `${count} asset found`}`;
+            }
+
+
+
+            for (const [image, data] of Object.entries(assets)) {
+                const fileExtension = image.split('.').pop();
+                const trimmedName = image.length > 20 ? image.substring(0, 17) + "..." : image;
+                let badgeColor = data.count > 0 ? "bg-green-500" : "bg-gray-500";
+                let badgeText = data.count > 0 ? `${data.count} Uses` : "Not Used";
+                const imageUrl = `/image?path=${encodeURIComponent(data.absolutePath)}`;
+
+                const card = document.createElement("div");
+                card.className = "relative bg-white shadow-lg p-4 rounded-lg text-center transition-all";
+                card.dataset.extension = fileExtension;
+                card.dataset.usage = data.count > 0 ? "used" : "not-used";
+
+                card.innerHTML = `
+                    <input type="checkbox" class="select-checkbox absolute top-2 left-2" value="${data.absolutePath}" onclick="toggleDeleteButton()">
+                    <button class="absolute top-2 right-2 text-red-500 hover:text-red-700" onclick="deleteAsset('${image}', '${data.absolutePath}')">❌</button>
+                    <img src="${imageUrl}" alt="${image}" class="w-full h-32 object-contain mx-auto mb-2">
+                    <p class="font-semibold">${trimmedName} </p>
+                    <span class="inline-block px-3 py-1 text-xs font-bold text-white rounded ${badgeColor}">${badgeText}</span>
+                    <p class="text-gray-500  mt-2">Used: ${data.count} times</p>
+                    <div class="text-xs text-gray-400 mt-2">
+                        ${data.locations.length > 0
+                        ? data.locations.map((loc, idx) =>
+                            `<a href="vscode://file/${loc.absolutePath}:${loc.lineNumbers[0]}:10" class="text-blue-500 hover:underline" target="_blank">${idx + 1} - ${loc.absolutePath.split('/').slice(-2).join('/')}</a><br>`).join("")
+                        : "Not used"}
+                    </div>
+                    <span
+                    class="text-sm bg-blue-500 text-white p-1 rounded-md my-3"> ${formatFileSize(data.size)}</span>
+                `;
+                grid.appendChild(card);
+            }
+        }
+
+        function filterImages() {
+            const query = document.getElementById("search").value.toLowerCase();
+            const filterType = document.getElementById("filterType").value;
+            const filterUsage = document.getElementById("filterUsage").value;
+
+            document.querySelectorAll(".bg-white").forEach(card => {
+                const matchesSearch = card.innerText.toLowerCase().includes(query);
+                const matchesFilter = filterType ? card.dataset.extension === filterType : true;
+                const matchesUsage = filterUsage ? card.dataset.usage === filterUsage : true;
+                card.style.display = matchesSearch && matchesFilter && matchesUsage ? "" : "none";
+            });
+        }
+
+        function toggleDarkMode() {
+            const body = document.getElementById("body");
+            body.classList.toggle("bg-gray-900");
+            body.classList.toggle("text-gray-200");
+            document.querySelectorAll(".bg-white").forEach(card => {
+                card.classList.toggle("bg-gray-800");
+                card.classList.toggle("text-white");
+            });
+            localStorage.setItem("darkMode", body.classList.contains("bg-gray-900"));
+        }
+
+        function toggleDeleteButton() {
+            const checkboxes = document.querySelectorAll(".select-checkbox:checked");
+            document.getElementById("deleteSelected").classList.toggle("hidden", checkboxes.length === 0);
+        }
+
+        async function deleteAsset(filename, absolutePath) {
+            if (confirm(`Are you sure you want to delete "${filename}"?`)) {
+                try {
+                    await fetch("/api/delete", {
+                        method: "DELETE",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ filename, absolutePath })
+                    })
+                    // document.querySelector(`img[src*='${absolutePath}']`).closest(".bg-white").remove();
+                    fetchAssets();
+                } catch (error) {
+                    alert("Error deleting the file.");
+                    console.error("Delete error:", error);
+                }
+            }
+        }
+
+
+        async function deleteSelectedAssets() {
+            const checkboxes = document.querySelectorAll(".select-checkbox:checked");
+            if (!confirm(`Delete ${checkboxes.length} selected files?`)) return;
+
+            document.getElementById("progress").classList.remove("hidden");
+            let completed = 0;
+            for (const checkbox of checkboxes) {
+                try {
+                    await fetch("/api/delete", {
+                        method: "DELETE",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ filename: 'random', absolutePath: checkbox.value })
+                    });
+                } catch (error) {
+                    console.error("Error deleting file:", error);
+                }
+                completed++;
+                document.getElementById("progressBar").style.width = `${(completed / checkboxes.length) * 100}%`;
+            }
+            document.getElementById("deleteSelected").classList.add("hidden");
+            document.getElementById("progress").classList.add("hidden");
+            fetchAssets();
+        }
+
+        // document.getElementById("darkModeToggle").addEventListener("click", toggleDarkMode);
+        // if (localStorage.getItem("darkMode") === "true") toggleDarkMode();
+        fetchAssets();
+    </script>
+</body>
+
+</html>
