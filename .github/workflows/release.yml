@@ -25,13 +25,13 @@ jobs:
         run: npm install
 
       - name: Bump version & Publish to NPM
-          run: |
-            git config --global user.name "github-actions[bot]"
-            git config --global user.email "github-actions[bot]@users.noreply.github.com"
-            npm version patch -m "chore(release): bump version to %s"
-            git add package.json package-lock.json
-            git commit --amend --no-edit
-            git push origin main --force
-            npm publish
-          env:
-            NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          npm version patch -m "chore(release): bump version to %s"
+          git add package.json package-lock.json
+          git commit -m "chore(release): bump version"
+          git push origin main
+          npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
